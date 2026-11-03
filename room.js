@@ -139,7 +139,7 @@ const Room = (() => {
   }
   // ===== 設定 =====
   async function settings(b) {
-    const area = await DB.get('area', { name:'大阪' }), map = await DB.get('bgmMap', {}), tracks = await DB.get('tracks', []);
+    const area = await DB.get('area', { name:'大阪' }), map = await DB.get('bgmMap', {}), tracks = await Tracks.all();
     const imgs = []; for (const n of ['home_normal', 'desk_normal', 'clinic_normal', 'bank_normal', 'room_normal', 'title', 'face_normal']) imgs.push([n, !!(await Pic.find(n))]);
     const opts = k => `<option value="">なし</option>${tracks.map(t => `<option value="${t.id}"${map[k] === t.id ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}`;
     b.innerHTML = `<h5>AI（GASのウェブアプリ）</h5>
@@ -150,8 +150,8 @@ const Room = (() => {
       <div class="w-row"><span>開くときにロック<small>銀行の貸金庫と同じ鍵（Face ID・マスターパスワード）</small></span><button class="sw ${CFG.lock ? 'on' : ''}" id="swLock"></button></div>
       <div class="w-row"><span>BGM</span><button class="sw ${CFG.bgm ? 'on' : ''}" id="swBgm"></button></div>
       <h5>BGM<small>端末に保存。公開リポジトリには置かない</small></h5>
-      <label class="btn w">音源を読み込む<input type="file" id="bgmIn" accept="audio/*" multiple hidden></label>
-      <div class="w-list">${tracks.map(t => `<div class="w-row"><span>${esc(t.name)}</span><button class="mini-b g" data-tdel="${t.id}">消す</button></div>`).join('') || '<p class="mini">まだありません。</p>'}</div>
+      <label class="btn w">音源を読み込む<input type="file" id="bgmIn" multiple hidden></label>
+      <div class="w-list">${tracks.map(t => `<div class="w-row"><span>${esc(t.name)}${t.builtin ? '<small>はじめから入っている曲</small>' : ''}</span>${t.builtin ? '' : `<button class="mini-b g" data-tdel="${t.id}">消す</button>`}</div>`).join('') || '<p class="mini">まだありません。</p>'}</div>
       ${tracks.length ? [['title', '起動画面']].concat(Object.keys(TABS).map(k => [k, TABS[k].name])).map(([k, l]) => `<label class="fl"><span>${l}</span><select data-bgm="${k}">${opts(k)}</select></label>`).join('') : ''}
       <h5>絵の状態</h5><div class="imgs">${imgs.map(([n, ok]) => `<span class="${ok ? 'ok' : ''}">${n}</span>`).join('')}</div>
       <h5>控え</h5>
@@ -224,8 +224,9 @@ const Room = (() => {
     }
     if (e.target.id === 'bgmIn') {
       const tr = await DB.get('tracks', []);
-      for (const f of e.target.files) { const id = uid(); await DB.blobPut(id, f.name, f); tr.push({ id, name:f.name.replace(/\.[^.]+$/, '') }); }
-      await DB.set('tracks', tr); toast('読み込みました'); render($('panelBody'));
+      let n = 0;
+      for (const f of e.target.files) { if (!/\.(mp3|m4a|aac|wav|ogg|caf|aiff?)$/i.test(f.name) && !/^audio\//.test(f.type)) continue; const id = uid(); await DB.blobPut(id, f.name, f); tr.push({ id, name:f.name.replace(/\.[^.]+$/, '') }); n++; }
+      await DB.set('tracks', tr); toast(n ? `${n}曲読み込みました` : '音源ファイルが見つかりませんでした'); Tracks.list = null; render($('panelBody'));
     }
     const s = e.target.closest('[data-bgm]'); if (s) { const map = await DB.get('bgmMap', {}); map[s.dataset.bgm] = s.value; await DB.set('bgmMap', map); App.playBgm(); }
   }
