@@ -1,6 +1,6 @@
 // Life Partner（乃亜版）— 土台：小物・日付・保存・AI・音・控え
 'use strict';
-const VERSION = '2.0';
+const VERSION = '3.0';
 const $ = id => document.getElementById(id);
 const p2 = n => String(n).padStart(2, '0');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -77,40 +77,53 @@ const CFG = { api:null, bgm:true, lock:false, vol:.35 };
 async function loadCfg() { Object.assign(CFG, await DB.get('cfg', {}) || {}); }
 const saveCfg = () => DB.set('cfg', { api:CFG.api, bgm:CFG.bgm, lock:CFG.lock, vol:CFG.vol });
 
-// ===== トースト・確認 =====
-function toast(t, ms = 2400) {
-  const e = $('toast'); e.textContent = t; e.className = 'on';
-  clearTimeout(e._t); e._t = setTimeout(() => { e.className = ''; }, ms);
+// ===== トースト・確認・入力（下から出るシート） =====
+function toast(t, ms = 2400, act = null) {
+  const e = $('toast');
+  e.innerHTML = `<span>${esc(t)}</span>${act ? `<button>${esc(act.label)}</button>` : ''}`;
+  e.className = 'on';
+  if (act) e.querySelector('button').onclick = () => { e.className = ''; act.fn(); };
+  clearTimeout(e._t); e._t = setTimeout(() => { e.className = ''; }, act ? Math.max(ms, 4500) : ms);
+}
+// シートを開いて、閉じたときに値を返す
+function sheet(html, onReady) {
+  return new Promise(ok => {
+    const el = h(`<div class="sh"><div class="sh-in">${html}</div></div>`);
+    const close = v => { el.classList.remove('on'); setTimeout(() => el.remove(), 320); ok(v); };
+    el.addEventListener('click', e => { if (e.target === el) close(null); });
+    $('app').appendChild(el); requestAnimationFrame(() => el.classList.add('on'));
+    onReady && onReady(el, close);
+  });
 }
 function ask(text, yes = 'はい', no = 'いいえ', face = '') {
-  return new Promise(ok => {
-    const el = h(`<div class="ask"><div class="ask-in hud">${face ? `<div class="ask-who">${Face.img(face, 'sm')}<b>乃亜</b></div>` : ''}<p>${esc(text)}</p>
-      <div class="ask-b"><button class="btn w" data-v="0">${esc(no)}</button><button class="btn" data-v="1">${esc(yes)}</button></div></div></div>`);
-    el.onclick = e => { const b = e.target.closest('[data-v]'); if (!b && e.target !== el) return; el.remove(); ok(!!(b && b.dataset.v === '1')); };
-    $('app').appendChild(el);
-  });
+  return sheet(`${face ? `<div class="sh-who">${Face.img(face, 'sm')}<b>乃亜</b></div>` : ''}<p class="sh-q">${esc(text)}</p>
+    <div class="sh-b"><button class="btn w" data-v="0">${esc(no)}</button><button class="btn" data-v="1">${esc(yes)}</button></div>`,
+    (el, close) => el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => close(b.dataset.v === '1'))).then(v => !!v);
 }
-// 入力つきの小さな画面。fields：[{k, label, type, value, options, ph}] → 値のオブジェクト（やめたら null）
-function form(title, fields, okLabel = '保存', extra = '') {
-  return new Promise(ok => {
-    const f = fields.map((x, i) => {
-      const v = x.value == null ? '' : x.value;
-      const inp = x.type === 'select' ? `<select data-i="${i}">${x.options.map(o => `<option value="${esc(o[0])}"${String(o[0]) === String(v) ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select>`
-        : x.type === 'area' ? `<textarea data-i="${i}" rows="3" placeholder="${esc(x.ph || '')}">${esc(v)}</textarea>`
-        : `<input data-i="${i}" type="${x.type || 'text'}" value="${esc(v)}" placeholder="${esc(x.ph || '')}"${x.type === 'number' ? ' inputmode="numeric"' : ''}>`;
-      return `<label class="fl"><span>${esc(x.label)}</span>${inp}</label>`;
-    }).join('');
-    const el = h(`<div class="ask"><div class="ask-in hud wide"><b class="ttl">${esc(title)}</b>${f}${extra}<div class="ask-b"><button class="btn w" data-v="0">やめる</button><button class="btn" data-v="1">${esc(okLabel)}</button></div></div></div>`);
-    el.onclick = e => {
-      const b = e.target.closest('[data-v]'); if (!b && e.target !== el) return;
-      if (b && b.dataset.v === '1') {
+// fields：[{k, label, type, value, options, ph}] → 値のオブジェクト。やめたら null。opt.del があれば「消す」→ { _del:true }
+function form(title, fields, okLabel = '保存', opt = {}) {
+  const f = fields.map((x, i) => {
+    const v = x.value == null ? '' : x.value;
+    const inp = x.type === 'select' ? `<select data-i="${i}">${x.options.map(o => `<option value="${esc(o[0])}"${String(o[0]) === String(v) ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select>`
+      : x.type === 'area' ? `<textarea data-i="${i}" rows="3" placeholder="${esc(x.ph || '')}">${esc(v)}</textarea>`
+      : `<input data-i="${i}" type="${x.type || 'text'}" value="${esc(v)}" placeholder="${esc(x.ph || '')}"${x.type === 'number' ? ' inputmode="numeric"' : ''}${x.type === 'password' ? ' autocomplete="off"' : ''}>`;
+    return `<label class="fl"><span>${esc(x.label)}</span>${inp}</label>`;
+  }).join('');
+  return sheet(`<div class="sh-h"><button class="sh-x" data-v="x">やめる</button><b>${esc(title)}</b><button class="sh-ok" data-v="ok">${esc(okLabel)}</button></div><div class="sh-body">${f}${opt.del ? `<button class="sh-del" data-v="del">${esc(opt.del)}</button>` : ''}</div>`,
+    (el, close) => {
+      el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
+        if (b.dataset.v === 'x') return close(null);
+        if (b.dataset.v === 'del') return close({ _del:true });
         const out = {}; el.querySelectorAll('[data-i]').forEach(n => { const x = fields[+n.dataset.i]; out[x.k] = x.type === 'number' ? (n.value === '' ? null : Number(n.value)) : n.value.trim(); });
-        el.remove(); ok(out);
-      } else if (b || e.target === el) { el.remove(); ok(null); }
-    };
-    $('app').appendChild(el);
-    setTimeout(() => { const i = el.querySelector('input,textarea'); if (i && !fields[0].noFocus) i.focus(); }, 80);
-  });
+        close(out);
+      });
+      setTimeout(() => { const i = el.querySelector('input,textarea'); if (i && !(fields[0] && fields[0].noFocus)) i.focus(); }, 340);
+    });
+}
+// メニュー（項目を選ぶ）。items：[{label, fn, danger}]
+function menu(title, items) {
+  return sheet(`<b class="sh-mt">${esc(title)}</b>${items.map((x, i) => `<button class="sh-mi${x.danger ? ' danger' : ''}" data-i="${i}">${esc(x.label)}${x.sub ? `<small>${esc(x.sub)}</small>` : ''}</button>`).join('')}<button class="sh-mi cancel" data-i="-1">閉じる</button>`,
+    (el, close) => el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { close(null); const x = items[+b.dataset.i]; if (x) setTimeout(x.fn, 200); }));
 }
 
 // ===== AI（GASのウェブアプリ） =====

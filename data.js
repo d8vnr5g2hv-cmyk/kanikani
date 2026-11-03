@@ -42,7 +42,7 @@ const Data = (() => {
     return of('plan').filter(r => r.status !== 'drop' && r.date >= from && r.date <= to).sort((a, b) => (a.date + (a.time || '99')).localeCompare(b.date + (b.time || '99')));
   }
   const nextPlan = () => { const t = D.today(), now = D.hm(); return plans(t, 30).find(r => r.date > t || !r.time || r.time >= now) || null; };
-  const todos = () => of('todo').filter(r => r.status === 'open').sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999') || a.at.localeCompare(b.at));
+  const todos = () => of('todo').filter(r => r.status === 'open').sort((a, b) => (a.order ?? 1e9) - (b.order ?? 1e9) || (a.due || '9999').localeCompare(b.due || '9999') || a.at.localeCompare(b.at));
   const doneSince = k => of('todo').filter(r => r.status === 'done' && (r.doneAt || '').slice(0, 10) >= k);
 
   // ===== 生活データベース =====
@@ -183,7 +183,7 @@ const Data = (() => {
     } catch (e) {}
     return weather;
   }
-  const wIcon = c => c == null ? '' : c <= 1 ? '☀' : c <= 3 ? '⛅' : c <= 48 ? '☁' : c <= 67 || (c >= 80 && c <= 82) ? '☂' : c <= 77 || c >= 85 && c <= 86 ? '❄' : '⚡';
+  const wIcon = () => '';
   const weatherText = () => !weather ? '' : `${weather.area}：今${weather.now}℃。` + weather.days.slice(0, 2).map((d, i) => `${i ? '明日' : '今日'}${d.min}〜${d.max}℃・降水${d.rain}%`).join('、');
 
   // ===== AIに渡す材料 =====

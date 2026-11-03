@@ -1,7 +1,7 @@
 // Life Partner — オフラインでも開けるように
 // プログラム（html・js・css）は、まずネットから最新を取りにいく（電波がないときだけ控えを使う）
 // 絵は、一度読んだら控えから出す（速いので）
-const CACHE = 'life-partner-noa-v6';
+const CACHE = 'life-partner-v3-1';
 self.addEventListener('install', e => { self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('life-partner') && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

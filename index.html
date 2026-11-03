@@ -4,73 +4,69 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Life Partner">
-<meta name="theme-color" content="#0b0f1e">
+<meta name="theme-color" content="#0b0d18">
 <title>Life Partner</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
+<!-- ホーム画面から開いたときの起動画像（白い画面を出さない） -->
+<link rel="apple-touch-startup-image" media="(device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3)" href="launch_1290x2796.jpg">
+<link rel="apple-touch-startup-image" media="(device-width:393px) and (device-height:852px) and (-webkit-device-pixel-ratio:3)" href="launch_1179x2556.jpg">
+<link rel="apple-touch-startup-image" media="(device-width:428px) and (device-height:926px) and (-webkit-device-pixel-ratio:3)" href="launch_1284x2778.jpg">
+<link rel="apple-touch-startup-image" media="(device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3)" href="launch_1170x2532.jpg">
+<link rel="apple-touch-startup-image" media="(device-width:375px) and (device-height:812px) and (-webkit-device-pixel-ratio:3)" href="launch_1125x2436.jpg">
+<link rel="apple-touch-startup-image" media="(device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:3)" href="launch_1242x2688.jpg">
+<link rel="apple-touch-startup-image" media="(device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:2)" href="launch_828x1792.jpg">
+<link rel="apple-touch-startup-image" media="(device-width:375px) and (device-height:667px) and (-webkit-device-pixel-ratio:2)" href="launch_750x1334.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&family=Klee+One:wght@400;600&family=Shippori+Mincho:wght@500;700&family=Quicksand:wght@300;400;500;600&display=block" rel="stylesheet">
 <link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="themes.css">
 </head>
 <body>
 <div id="app" data-tab="home">
 
-  <!-- 乃亜（全画面のステージ） -->
-  <div id="stage">
-    <div class="sil"></div><span class="sil-note"></span>
-    <img class="f fa" alt=""><img class="f fx" alt=""><img class="f fb" alt=""><img class="f fs" alt="">
-    <div class="scan"></div>
-  </div>
+  <!-- 乃亜（全画面） -->
+  <div id="stage"><div class="lift"><img class="f fa" alt=""><img class="f fx" alt=""><img class="f fb" alt=""></div><div class="shade"></div></div>
   <canvas id="motes"></canvas>
 
-  <!-- 上のHUD -->
-  <header id="hud">
-    <div id="hudTab"><small>HOME</small>ホーム</div>
-    <button class="ic-btn" id="gearBtn" aria-label="設定"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg></button>
-  </header>
+  <!-- ホーム：ロック画面 -->
+  <div id="homeTop"><div id="hmDate"></div><div id="hmTime"></div><div id="hmWx"></div></div>
 
-  <!-- ホーム：ロック画面ふう -->
-  <div id="homeTop">
-    <div id="hmDate"></div>
-    <div id="hmTime"></div>
-    <div id="hmWx"></div>
-  </div>
+  <!-- 下の帯（そのタブの要点と＋） -->
+  <div id="strip"><div id="stripText"></div><button id="fab" aria-label="一言入れる"></button></div>
 
-  <!-- 引き上げるパネル -->
-  <section id="panel" class="hud">
-    <div id="grab"><i></i></div>
-    <div id="peek"></div>
+  <!-- パネル（帯をタップで開く） -->
+  <section id="panel">
+    <div class="pn-h"><i class="grab"></i><button id="panelX" aria-label="閉じる"></button></div>
     <div id="panelBody"></div>
   </section>
 
-  <button id="fab" aria-label="一言入れる"><span>＋</span></button>
-
   <nav id="tabs">
-    <button data-v="home" class="on"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg>ホーム</button>
-    <button data-v="desk"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M9 3v4M15 3v4M4 10h16M8 14h3"/></svg>秘書室</button>
-    <button data-v="clinic"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M9 11h6M12 8v6"/></svg>診療所</button>
-    <button data-v="bank"><svg viewBox="0 0 24 24"><path d="M3 9l9-5 9 5M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/></svg>銀行</button>
-    <button data-v="room"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>自室</button>
+    <button data-v="home" class="on"></button><button data-v="desk"></button><button data-v="clinic"></button><button data-v="bank"></button><button data-v="room"></button>
   </nav>
 
-  <!-- 乃亜と話す（メッセージ窓） -->
+  <!-- 乃亜と話す -->
   <div id="talk">
-    <div class="tw hud">
-      <div class="tw-h"><span id="twFace"></span><b>乃亜</b><em id="twMode"></em><button id="twX" aria-label="閉じる">✕</button></div>
+    <div class="nv">
+      <div class="nv-name"><b>乃亜</b><em id="twMode"></em><button id="twX" aria-label="閉じる"></button></div>
       <p id="twMe"></p>
-      <div id="twText"></div>
+      <div id="twText"></div><i id="twNext"></i>
       <div id="twChoice"></div>
-      <div id="twChips" class="chips sm"></div>
+      <div id="twChips" class="chips"></div>
       <form id="twForm"><input id="twIn" placeholder="乃亜に話す" autocomplete="off" enterkeyhint="send"><button class="btn">送る</button></form>
     </div>
   </div>
 
+  <!-- タブのスプラッシュ -->
+  <div id="splash"><img alt=""><div class="sp-card"><span class="sp-en"></span><i class="sp-line"></i><b class="sp-ja"></b><small class="sp-sub"></small></div></div>
+
   <!-- 一言入力 -->
-  <div class="sheet" id="inSheet"><div class="in hud">
-    <div class="in-h"><b>一言でどうぞ</b><label class="ph-btn" aria-label="写真"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-2h6l2 2h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg><input type="file" id="inPhoto" accept="image/*" hidden></label></div>
-    <div class="chips sm" id="inUsual"></div>
+  <div class="sheet" id="inSheet"><div class="in">
+    <div class="in-h"><b>乃亜に伝える</b><label class="ph-btn" aria-label="写真"><span id="phIc"></span><input type="file" id="inPhoto" accept="image/*" hidden></label></div>
+    <div class="chips" id="inUsual"></div>
     <form id="inForm"><input id="inText" placeholder="例）金曜19時 坂井さん" autocomplete="off" enterkeyhint="done"></form>
     <p class="mini" id="inHint"></p>
   </div></div>
@@ -78,10 +74,13 @@
   <div id="toast"></div>
 
   <!-- 起動画面 -->
-  <div id="title"><div class="ti-in"><small>LIFE PARTNER</small><b>NOA</b><i></i><span id="tiTap">タップして開く</span></div></div>
+  <div id="title"><div class="ti-img"></div><div class="ti-blink"></div><div class="ti-shade"></div>
+    <div class="ti-logo"><small>LIFE PARTNER</small><b>Noa</b><i></i><span class="ti-tap">TOUCH TO START</span></div>
+    <div class="ti-lock"></div></div>
 </div>
 
 <script src="core.js"></script>
+<script src="ui.js"></script>
 <script src="noa.js"></script>
 <script src="data.js"></script>
 <script src="input.js"></script>
@@ -92,7 +91,12 @@
 <script src="bank.js"></script>
 <script src="vault.js"></script>
 <script src="room.js"></script>
-<script src="lock.js"></script>
+<script src="title.js"></script>
 <script src="app.js"></script>
+<script>
+  // アイコンを入れる（絵文字は使わない）
+  document.querySelectorAll('#tabs button').forEach(b => b.innerHTML = IC(b.dataset.v) + `<span>${TABS[b.dataset.v].name}</span>`);
+  $('fab').innerHTML = IC('plus'); $('panelX').innerHTML = IC('x'); $('twX').innerHTML = IC('x'); $('phIc').innerHTML = IC('cam');
+</script>
 </body>
 </html>

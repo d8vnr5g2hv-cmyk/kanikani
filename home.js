@@ -1,4 +1,4 @@
-// Life Partner — ホーム（部屋着の乃亜。ロック画面ふうの日付・時計・天気と、各タブの要点）
+// Life Partner — ホーム（部屋着の乃亜。ロック画面と、各タブの要点）
 'use strict';
 const Home = (() => {
   let tick = 0;
@@ -6,59 +6,56 @@ const Home = (() => {
   function clock() {
     const d = new Date();
     $('hmDate').textContent = `${d.getMonth() + 1}月${d.getDate()}日 ${WD[d.getDay()]}曜日`;
-    $('hmTime').innerHTML = `${p2(d.getHours())}:${p2(d.getMinutes())}<small>:${p2(d.getSeconds())}</small>`;
+    $('hmTime').innerHTML = `${p2(d.getHours())}<i>:</i>${p2(d.getMinutes())}<small>${p2(d.getSeconds())}</small>`;
   }
   function weather() {
     const w = Data.weather();
-    $('hmWx').innerHTML = w ? `<span class="wi">${Data.wIcon(w.code)}</span>${w.now}℃<small>${esc(w.area)}　${w.days[0].min}〜${w.days[0].max}℃・☂${w.days[0].rain}%</small>` : '<small>天気を読み込み中…</small>';
+    $('hmWx').innerHTML = w ? `${wxIcon(w.code)}<b>${w.now}°</b><span>${esc(w.area)}　${w.days[0].min}° / ${w.days[0].max}°　降水 ${w.days[0].rain}%</span>` : '';
   }
-  function start() { clearInterval(tick); clock(); weather(); tick = setInterval(clock, 1000); }
+  function start() { clearInterval(tick); clock(); tick = setInterval(clock, 1000); Data.onChange(k => { if (k === 'weather' || k === 'all') weather(); }); weather(); }
 
   function peek() {
     const m = Data.moneyNow(), p = Data.nextPlan();
-    return `<span>今日使える <b>${m.set ? yen(m.perDay) : '—'}</b></span><span>${p ? `次：${D.label(p.date)}${p.time ? ' ' + p.time : ''} ${esc(p.text)}` : '予定なし'}</span>`;
+    return `<span class="k">今日使える</span><b class="v">${m.set ? yen(m.perDay) : '—'}</b><span class="s">${p ? `${D.label(p.date)}${p.time ? ' ' + p.time : ''}　${esc(p.text)}` : '予定なし'}</span>`;
   }
 
   async function render(el) {
     const m = Data.moneyNow(), p = Data.nextPlan(), td = Data.todos(), c = await Data.chk(D.today()), st = await Data.stDaily(), sl = Data.sleepH(c);
     const al = await Data.alerts(), stale = Data.stale(99).length, w = Data.weather();
     el.innerHTML = `
-      ${al.map(a => `<div class="alert hud" data-al="${a.id}" data-go="${a.tab}">${Face.img(a.f, 'sm')}<p>${esc(a.text)}</p><button class="x" data-seen="${a.id}">✕</button></div>`).join('')}
-      <div class="sec"><h3><small>BRIEFING</small>乃亜から</h3><div id="hmBrief" class="brief">${Face.img('normal', 'sm')}<div class="bt"><span class="dots"><i></i><i></i><i></i></span></div></div></div>
-      <div class="sec"><h3><small>STATUS</small>各タブの要点</h3>
-        <div class="rows">
-          <button class="row go" data-go="desk"><i class="tb desk">秘書室</i><span>${p ? `${D.label(p.date)}${p.time ? ' ' + p.time : ''} ${esc(p.text)}` : '予定なし'}</span><em>やること${td.length}</em></button>
-          <button class="row go" data-go="clinic"><i class="tb clinic">診療所</i><span>${sl != null ? `睡眠 ${sl}時間` : '睡眠：未入力'}</span><em>${st ? 'チェック済' : 'チェックまだ'}</em></button>
-          <button class="row go" data-go="bank"><i class="tb bank">銀行</i><span>今日使える ${m.set ? yen(m.perDay) : '—'}</span><em>${m.unpaid.length ? `未払い${m.unpaid.length}` : `給料日まで${m.days}日`}</em></button>
-          <button class="row go" data-go="room"><i class="tb room">自室</i><span>生活データベース ${Data.life().length}件</span><em>見直し${stale}</em></button>
-        </div></div>
-      ${w ? `<div class="sec"><h3><small>WEATHER</small>天気</h3><div class="wx3">${w.days.map((d, i) => `<div><b>${['今日', '明日', 'あさって'][i]}</b><span class="wi">${Data.wIcon(d.code)}</span><em>${d.min}〜${d.max}℃</em><small>☂${d.rain}%</small></div>`).join('')}</div></div>` : ''}`;
+      <div class="hm-brief" id="hmBrief">${Face.img('normal', 'md')}<div class="bt"><span class="dots"><i></i><i></i><i></i></span></div></div>
+      ${al.length ? `<div class="hm-al">${al.map(a => `<div class="al tap" data-go="${a.tab}">${Face.img(a.f, 'sm')}<p>${esc(a.text)}</p><button class="x" data-seen="${a.id}">${IC('x')}</button></div>`).join('')}</div>` : ''}
+      <h3 class="hd">各タブの要点</h3>
+      <div class="hm-grid">
+        <button class="hm-t" data-go="desk"><small>秘書室</small><b>${td.length}<i>件</i></b><span>${p ? `${D.label(p.date)} ${esc(p.text)}` : '予定なし'}</span></button>
+        <button class="hm-t" data-go="clinic"><small>診療所</small><b>${sl != null ? sl : '—'}<i>時間</i></b><span>${st ? `今日のチェック ${st.sum}/12` : '今日のチェックまだ'}</span></button>
+        <button class="hm-t" data-go="bank"><small>銀行</small><b>${m.set ? yen(m.perDay) : '—'}</b><span>${m.unpaid.length ? `未払い ${m.unpaid.length}件` : `給料日まで ${m.days}日`}</span></button>
+        <button class="hm-t" data-go="room"><small>自室</small><b>${Data.life().length}<i>件</i></b><span>見直し ${stale}件</span></button>
+      </div>
+      ${w ? `<h3 class="hd">天気　<small>${esc(w.area)}</small></h3><div class="hm-wx">${w.days.map((d, i) => `<div>${wxIcon(d.code)}<b>${['今日', '明日', 'あさって'][i]}</b><span>${d.min}° / ${d.max}°</span><small>降水 ${d.rain}%</small></div>`).join('')}</div>` : ''}`;
     brief();
   }
-
-  // 乃亜のブリーフィング（朝・昼・夜で1回ずつ。AIがなければ手元で作る）
   function localBrief() {
     const m = Data.moneyNow(), p = Data.nextPlan(), td = Data.todos(), w = Data.weather(), per = D.period(), out = [];
-    if (per === 'am') { if (p && p.date === D.today()) out.push(`今日は${p.time ? p.time + 'から' : ''}「${p.text}」。`); if (w) out.push(`最高${w.days[0].max}℃${w.days[0].rain >= 50 ? '、傘いるよ' : ''}。`); }
+    if (per === 'am') { if (p && p.date === D.today()) out.push(`今日は${p.time ? p.time + 'から' : ''}「${p.text}」。`); if (w) out.push(`最高${w.days[0].max}度${w.days[0].rain >= 50 ? '。傘いるよ' : ''}。`); }
     if (m.set) out.push(`今日使えるのは${yen(m.perDay)}まで。`);
     if (td.length) out.push(`やることは${td.length}つ。まず「${td[0].text}」から。`);
     if (per === 'night') out.push('今日もおつかれ。……ちゃんと寝てね。');
-    return { intro:Noa.hello()[0], lines:out.slice(0, 3), face:Noa.hello()[1] };
+    return { lines:out.slice(0, 3), face:'normal' };
   }
   async function brief() {
-    const box = $('hmBrief'); if (!box) return;
     const k = `brief:${D.today()}:${D.period()}`;
     let b = await DB.get(k);
     if (!b && Api.ready()) { b = await Api.call('brief', { period:D.period(), snap:Data.snapshot(), ctx:Data.context(['habit', 'bed', 'clothes'], ['plan', 'todo'], 6) }, { retry:1, timeout:25000 }); if (b && b.lines) await DB.set(k, b); }
     if (!b || !b.lines) b = localBrief();
-    if (!$('hmBrief')) return;
-    $('hmBrief').innerHTML = `${Face.img(b.face || 'normal', 'sm')}<div class="bt"><b>${esc(b.intro || '')}</b>${(b.lines || []).map(l => `<p>${esc(l)}</p>`).join('')}</div>`;
+    const box = $('hmBrief'); if (!box) return;
+    box.innerHTML = `${Face.img(b.face || 'normal', 'md')}<div class="bt">${b.intro ? `<b>${esc(b.intro)}</b>` : ''}${(b.lines || []).map(l => `<p>${esc(l)}</p>`).join('')}</div>`;
   }
 
   function bind() {
     $('panelBody').addEventListener('click', async e => {
       if (App.tab() !== 'home') return;
-      const s = e.target.closest('[data-seen]'); if (s) { e.stopPropagation(); await Data.seeAlert(s.dataset.seen); s.closest('.alert').remove(); return; }
+      const s = e.target.closest('[data-seen]'); if (s) { e.stopPropagation(); await Data.seeAlert(s.dataset.seen); s.closest('.al').remove(); return; }
       const g = e.target.closest('[data-go]'); if (g) App.go(g.dataset.go, true);
     });
   }

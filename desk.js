@@ -1,35 +1,41 @@
-// Life Partner — 秘書室（まとめ・提案書・全タブの期限とやること・書き留め）
+// Life Partner — 秘書室（作戦室の電子画面。まとめ・提案書・全タブの期限とやること・書き留め）
 'use strict';
 const Desk = (() => {
-  const TABN = { desk:'秘書室', clinic:'診療所', bank:'銀行', room:'自室', home:'ホーム' };
-
   function peek() {
     const td = Data.todos(), p = Data.nextPlan(), op = Data.of('proposal').filter(r => r.status === 'open').length;
-    return `<span>やること <b>${td.length}</b></span><span>${op ? `提案 ${op}件` : p ? `次：${D.label(p.date)} ${esc(p.text)}` : '予定なし'}</span>`;
+    return `<span class="k">やること</span><b class="v">${td.length}</b><span class="s">${op ? `新しい提案 ${op}件` : p ? `${D.label(p.date)}${p.time ? ' ' + p.time : ''}　${esc(p.text)}` : '予定なし'}</span>`;
   }
 
   async function render(el) {
     const list = await Data.crossList(), props = Data.of('proposal').filter(r => r.status === 'open' || r.status === 'hold').slice(-6).reverse();
-    const ideas = Data.of('idea').slice(-5).reverse(), sum = await DB.get('sum:' + D.today());
+    const ideas = Data.of('idea').slice(-6).reverse(), sum = await DB.get('sum:' + D.today()), now = new Date();
+    const todoRows = Data.todos().map(r => ({ id:r.id, kind:r.work ? '仕事' : r.kind === 'ask' ? 'お願い' : 'やること', tab:r.work ? 'room' : 'desk', text:r.text, when:r.due })), other = list.filter(x => !x.todo);
     el.innerHTML = `
-      <div class="sec"><h3><small>SUMMARY</small>まとめ</h3>
-        <div class="seg" id="sumSeg"><button data-sum="am">朝</button><button data-sum="night">夜</button><button data-sum="week">今週</button></div>
-        <div class="brief" id="sumBox">${sum ? sumHtml(sum) : '<div class="bt"><p class="mini">ボタンを押すと、乃亜がその時点の全タブをまとめます。</p></div>'}</div></div>
-      <div class="sec"><h3><small>PROPOSALS</small>提案書<button class="add" id="propGo">提案をもらう</button></h3>
-        ${props.length ? props.map(r => `<div class="prop hud${r.status === 'hold' ? ' hold' : ''}" data-id="${r.id}">
-          <b>${esc(r.text)}</b>${r.why ? `<p><i>理由</i>${esc(r.why)}</p>` : ''}${r.alt ? `<p><i>代わりの案</i>${esc(r.alt)}</p>` : ''}
-          <div class="pb"><button data-p="adopt">採用</button><button data-p="hold">${r.status === 'hold' ? '保留中' : '保留'}</button><button data-p="reject">却下</button></div></div>`).join('') : '<p class="mini">今は提案はありません。</p>'}</div>
-      <div class="sec"><h3><small>ALL TABS</small>期限とやること<button class="add" data-add="todo">＋</button></h3>
-        <div class="rows">${list.length ? list.map(x => `<div class="row x" ${x.id ? `data-rid="${x.id}"` : ''} ${x.chore ? `data-chore="${x.chore}"` : ''} ${x.unpaid ? 'data-go="bank"' : ''} ${!x.id && !x.chore && !x.unpaid ? `data-go="${x.tab}"` : ''}>
-          ${x.todo || x.chore ? '<button class="ck" aria-label="完了"></button>' : '<span class="ck dot"></span>'}
-          <span><i class="tb ${x.tab}">${esc(x.kind)}</i>${esc(x.text)}</span><em>${x.when ? D.label(x.when) + (x.time ? ' ' + x.time : '') : ''}</em></div>`).join('') : '<p class="mini">なにもありません。……ゆっくりしてていいよ。</p>'}</div></div>
-      <div class="sec"><h3><small>NOTE</small>書き留め</h3>
+      <div class="hud-top"><span>OPERATIONS</span><em>${D.today().replace(/-/g, '.')}　${p2(now.getHours())}:${p2(now.getMinutes())}</em></div>
+      <section class="hud-box"><h4><small>SUMMARY</small>まとめ</h4>
+        <div class="seg"><button data-sum="am">朝</button><button data-sum="night">夜</button><button data-sum="week">今週</button></div>
+        <div class="hud-brief" id="sumBox">${sum ? sumHtml(sum) : '<p class="mini">押すと、乃亜がその時点の全タブをまとめます。</p>'}</div></section>
+      <section class="hud-box"><h4><small>PROPOSALS</small>提案書<button class="hud-act" id="propGo">提案をもらう</button></h4>
+        ${props.length ? props.map((r, i) => `<div class="prop${r.status === 'hold' ? ' hold' : ''}" data-id="${r.id}"><span class="no">No.${p2(i + 1)}</span>
+          <b>${esc(r.text)}</b>${r.why ? `<p><i>理由</i>${esc(r.why)}</p>` : ''}${r.alt ? `<p><i>代案</i>${esc(r.alt)}</p>` : ''}
+          <div class="pb"><button data-p="adopt">採用</button><button data-p="hold">${r.status === 'hold' ? '保留中' : '保留'}</button><button data-p="reject">却下</button></div></div>`).join('') : '<p class="mini">今は提案はありません。</p>'}</section>
+      <section class="hud-box"><h4><small>TASKS</small>やること<button class="hud-act" data-add="todo">追加</button></h4>
+        <p class="mini">右へスワイプで完了、左へスワイプで消す。長押しで並べ替え。</p>
+        <div class="sw-list" id="deskTodo">${todoRows.map(x => Swipe.row(x.id, `<i class="tag t-${x.tab}">${esc(x.kind)}</i><span class="tx">${esc(x.text)}</span><em>${x.when ? D.label(x.when) + 'まで' : ''}</em>`)).join('') || '<p class="mini">やることはありません。</p>'}</div></section>
+      <section class="hud-box"><h4><small>ALL TABS</small>期限と予定</h4>
+        <div class="hud-list">${other.map(x => `<button class="hl" ${x.chore ? `data-chore="${x.chore}"` : `data-go="${x.tab}"`}><i class="tag t-${x.tab}">${esc(x.kind)}</i><span class="tx">${esc(x.text)}</span><em>${x.when ? D.label(x.when) + (x.time ? ' ' + x.time : '') : ''}</em>${x.chore ? '<span class="done-b">済</span>' : ''}</button>`).join('') || '<p class="mini">なにもありません。……ゆっくりしてていいよ。</p>'}</div></section>
+      <section class="hud-box"><h4><small>NOTES</small>書き留め</h4>
         <form class="inrow" id="ideaForm"><input id="ideaIn" placeholder="思いついたこと、これするとか"><button class="btn">残す</button></form>
-        <div class="rows">${ideas.map(r => `<div class="row"><span>${esc(r.text)}</span><em>${D.md(r.date)}</em><button class="del" data-rm="${r.id}">✕</button></div>`).join('')}</div></div>`;
+        <div class="sw-list" id="deskIdea">${ideas.map(r => Swipe.row(r.id, `<span class="tx">${esc(r.text)}</span><em>${D.md(r.date)}</em>`, 'no-done')).join('')}</div></section>`;
+    Swipe.bind($('deskTodo'), { done:id => complete(id), del:id => removeUndo(id) });
+    Swipe.bind($('deskIdea'), { del:id => removeUndo(id) });
+    Reorder.bind($('deskTodo'), '.sw-row', ids => ids.forEach((id, i) => Data.update(id, { order:i })));
   }
-  const sumHtml = s => `${Face.img(s.face || 'normal', 'sm')}<div class="bt"><b>${esc(s.intro || '')}</b>${(s.lines || []).map(l => `<p>${esc(l)}</p>`).join('')}</div>`;
+  const sumHtml = s => `${Face.img(s.face || 'normal', 'sm')}<div class="bt">${s.intro ? `<b>${esc(s.intro)}</b>` : ''}${(s.lines || []).map(l => `<p>${esc(l)}</p>`).join('')}</div>`;
 
-  // まとめ（朝・夜・今週）
+  async function complete(id) { await Data.update(id, { status:'done', doneAt:new Date().toISOString() }); toast('完了にしました', 4000, { label:'元に戻す', fn:() => Data.update(id, { status:'open', doneAt:null }) }); }
+  async function removeUndo(id) { const r = Object.assign({}, Data.get(id)); await Data.remove(id); toast('消しました', 4000, { label:'元に戻す', fn:() => Data.add(r) }); }
+
   async function summary(kind) {
     $('sumBox').innerHTML = `${Face.img('normal', 'sm')}<div class="bt"><span class="dots"><i></i><i></i><i></i></span></div>`;
     let s = null;
@@ -43,23 +49,21 @@ const Desk = (() => {
         lines:[`片づけたこと ${done.length}件、残り ${td.length}件。`, m.set ? `今日使えるのは${yen(m.perDay)}。給料日まで${m.days}日。` : '手元のお金を一度教えて。', kind === 'week' ? `記録にない出費は今週${yen(Data.leakWeek())}。` : (td[0] ? `次は「${td[0].text}」。` : '……今日はもう休んでいいよ。')] };
     }
     await DB.set('sum:' + D.today(), s);
-    $('sumBox').innerHTML = sumHtml(s);
+    if ($('sumBox')) $('sumBox').innerHTML = sumHtml(s);
   }
 
-  // 提案（AIがなければ、手元のルールで出す）
   async function localProposals() {
     const out = [], w = Data.weather(), m = Data.moneyNow(), kake = Data.lifeOf('bed').find(x => /掛け布団/.test(x.name));
-    const noFuton = !kake || /ない|なし/.test(kake.val);
-    if (w && w.days[1] && w.days[1].min <= 10 && noFuton) out.push({ key:'futon', text:'寝るときの寒さ対策をする', why:`明日の朝は${w.days[1].min}℃。寝具が毛布だけなので冷えやすい。`, alt:'エアコンを弱め（20℃前後）にして寝る。お金に余裕ができたら掛け布団を「買いたいもの」に。' });
+    if (w && w.days[1] && w.days[1].min <= 10 && (!kake || /ない|なし/.test(kake.val))) out.push({ key:'futon-' + D.week(), text:'寝るときの寒さ対策をする', why:`明日の朝は${w.days[1].min}度。寝具が毛布だけなので冷えやすい。`, alt:'エアコンを弱め（20度前後）にして寝る。余裕ができたら掛け布団を「買いたいもの」に。' });
     if (m.unpaid.length && m.days <= 7) out.push({ key:'unpaid-' + D.ym(), text:`給料日（${D.md(m.payday)}）は、入金を確かめてから未払いを先に払う`, why:`未払いが${yen(m.unpaidSum)}ある。後回しにすると、また次の月に残る。`, alt:'全額が難しければ、管理会社に分けて払えるか相談する。' });
-    const days = await Data.days(5), late = days.filter(d => D.min(d.c.bed || '00:00') >= 25 * 60 || (d.c.bed && D.min(d.c.bed) < 5 * 60)).length;
-    if (late >= 3) out.push({ key:'sleep-' + D.week(), text:'ゲームは25時で切り上げる', why:`この5日で、25時を過ぎて寝た日が${late}日。`, alt:'まずは平日だけ。休日の前はそのままでいい。' });
+    const days = await Data.days(5), late = days.filter(d => d.c.bed && D.min(d.c.bed) < 5 * 60 && D.min(d.c.bed) >= 60).length;
+    if (late >= 3) out.push({ key:'sleep-' + D.week(), text:'ゲームは25時で切り上げる', why:`この5日で、1時を過ぎて寝た日が${late}日。`, alt:'まずは平日だけ。休日の前はそのままでいい。' });
     const ch = Data.chores().find(c => c.name === '洗濯' && Data.choreDue(c) <= D.today());
-    if (ch) out.push({ key:'laundry-' + D.today(), text:'今日は洗濯の日', why:'前に洗ってから2日たった。', alt:'今日がむずかしければ明日の朝に回す。' });
+    if (ch) out.push({ key:'laundry-' + D.today(), text:'今日は洗濯の日', why:'前に洗ってから2日たった。', alt:'今日がむずかしければ、明日の朝に回す。' });
     return out;
   }
   async function propose() {
-    toast('乃亜が考えています…');
+    toast('乃亜が考えています');
     let list = null;
     if (Api.ready()) {
       const r = await Api.call('propose', { snap:Data.snapshot(), ctx:Data.context(['home', 'bed', 'appl', 'clothes', 'habit', 'money', 'vice', 'body'], ['plan', 'todo'], 8),
@@ -84,15 +88,9 @@ const Desk = (() => {
         if (st === 'adopt') { const r = Data.get(id); await Data.add({ domain:'todo', kind:'todo', text:r.text, src:'proposal' }); toast('採用。やることに入れたよ'); }
         return;
       }
-      const ck = e.target.closest('.ck:not(.dot)'); if (ck) {
-        const row = ck.closest('.row'); Sound.se('ok'); haptic(); row.classList.add('done');
-        if (row.dataset.rid) await Data.update(row.dataset.rid, { status:'done', doneAt:new Date().toISOString() });
-        if (row.dataset.chore) await Data.choreDone(row.dataset.chore);
-        return;
-      }
+      const ch = e.target.closest('[data-chore]'); if (ch) { Sound.se('ok'); await Data.choreDone(ch.dataset.chore); toast('済みにしました'); return; }
       const g = e.target.closest('[data-go]'); if (g) return App.go(g.dataset.go, true);
-      const rm = e.target.closest('[data-rm]'); if (rm) return Data.remove(rm.dataset.rm);
-      const ad = e.target.closest('[data-add="todo"]'); if (ad) {
+      if (e.target.closest('[data-add="todo"]')) {
         const v = await form('やることを足す', [{ k:'text', label:'やること' }, { k:'due', label:'期限（なくてもよい）', type:'date' }, { k:'work', label:'種類', type:'select', options:[['0', 'ふだん'], ['1', '仕事']], value:'0' }]);
         if (v && v.text) await Data.add({ domain:'todo', kind:'todo', text:v.text, due:v.due || '', work:v.work === '1' });
       }
@@ -103,5 +101,5 @@ const Desk = (() => {
       await Data.add({ domain:'idea', kind:'idea', text:v }); toast('残しました');
     });
   }
-  return { bind, peek, render };
+  return { bind, peek, render, complete, removeUndo };
 })();

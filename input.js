@@ -114,7 +114,7 @@ const Input = (() => {
   let echoT = 0;
   function showEcho(text, face, saved, wait) {
     const e = $('echo');
-    e.innerHTML = `<div class="echo-b hud">${Face.img(face, 'sm')}<div class="echo-t"><b>乃亜</b>
+    e.innerHTML = `<div class="echo-b">${Face.img(face, 'sm')}<div class="echo-t"><b>乃亜</b>
       <p>${saved.map(s => `<span class="tag">${esc(TAG(s))}</span>`).join('')}${wait ? '<span class="dots"><i></i><i></i><i></i></span>' : esc(text).replace(/\n/g, '<br>')}</p>
       ${wait || !last.length ? '' : '<small>違っていたら、ここをタップして直す</small>'}</div></div>`;
     e.className = 'on'; clearTimeout(echoT);
@@ -127,19 +127,19 @@ const Input = (() => {
     if (!last.length) return hideEcho();
     hideEcho();
     const opts = Object.entries(DOMAINS).filter(([k]) => k !== 'proposal').map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
-    const el = h(`<div class="ask"><div class="ask-in hud wide"><b class="ttl">直す</b>
-      ${last.map((r, i) => `<div class="fixr" data-i="${i}"><select>${opts}</select><input value="${esc(r.text)}"><input class="amt" inputmode="numeric" placeholder="金額" value="${r.amt || ''}"><button class="del" data-del="${i}">消す</button></div>`).join('')}
-      <div class="ask-b"><button class="btn w" data-x>やめる</button><button class="btn" data-ok>保存</button></div></div></div>`);
-    el.querySelectorAll('.fixr').forEach((row, i) => { row.querySelector('select').value = last[i].domain; });
-    el.onclick = async e => {
-      if (e.target === el || e.target.closest('[data-x]')) return el.remove();
-      const d = e.target.closest('[data-del]'); if (d) { const i = +d.dataset.del; await Data.remove(last[i].id); d.parentNode.remove(); last[i] = null; return; }
-      if (e.target.closest('[data-ok]')) {
-        for (const row of el.querySelectorAll('.fixr')) { const r = last[+row.dataset.i]; if (!r) continue; const [s, t, a] = [row.querySelector('select'), row.querySelector('input'), row.querySelector('.amt')]; await Data.update(r.id, { domain:s.value, text:t.value, amt:a.value ? Number(a.value) : null }); }
-        last = last.filter(Boolean); el.remove(); toast('直しました'); Data.touch();
-      }
-    };
-    $('app').appendChild(el);
+    sheet(`<div class="sh-h"><button class="sh-x" data-x>やめる</button><b>直す</b><button class="sh-ok" data-ok>保存</button></div><div class="sh-body">
+      ${last.map((r, i) => `<div class="fixr" data-i="${i}"><select>${opts}</select><input value="${esc(r.text)}"><input class="amt" inputmode="numeric" placeholder="金額" value="${r.amt || ''}"><button class="mini-b g" data-del="${i}">消す</button></div>`).join('')}</div>`,
+      (el, close) => {
+        el.querySelectorAll('.fixr').forEach((row, i) => { row.querySelector('select').value = last[i].domain; });
+        el.addEventListener('click', async e => {
+          if (e.target.closest('[data-x]')) return close(null);
+          const d = e.target.closest('[data-del]'); if (d) { const i = +d.dataset.del; await Data.remove(last[i].id); d.parentNode.remove(); last[i] = null; return; }
+          if (e.target.closest('[data-ok]')) {
+            for (const row of el.querySelectorAll('.fixr')) { const r = last[+row.dataset.i]; if (!r) continue; const [s, t, a] = [row.querySelector('select'), row.querySelector('input'), row.querySelector('.amt')]; await Data.update(r.id, { domain:s.value, text:t.value, amt:a.value ? Number(a.value) : null }); }
+            last = last.filter(Boolean); close(true); toast('直しました'); Data.touch();
+          }
+        });
+      });
   }
 
   // ===== 写真（長い辺を1024pxに縮めて送る） =====

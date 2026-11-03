@@ -62,7 +62,7 @@ const Vault = (() => {
 
   // ===== 画面 =====
   function open() {
-    const el = h(`<div class="qs" id="vault"><div class="qs-in hud"><header><b>金庫 <small>VAULT</small></b><button class="x">✕</button></header><div class="qs-body" id="vBody"></div><footer id="vFoot"></footer></div></div>`);
+    const el = h(`<div class="qs" id="vault"><div class="qs-in vault-in"><header><b>金庫 <small>VAULT</small></b><button class="x">${IC('x')}</button></header><div class="qs-body" id="vBody"></div><footer id="vFoot"></footer></div></div>`);
     $('app').appendChild(el);
     el.querySelector('.x').onclick = close;
     el.addEventListener('click', onClick);
@@ -96,7 +96,8 @@ const Vault = (() => {
     const v = await form(isNew ? 'アカウントを追加' : e.name, [
       { k:'name', label:'サービス名', value:e.name, ph:'例：NIKKE' }, { k:'user', label:'ID・メールアドレス', value:e.user },
       { k:'pass', label:'パスワード', value:e.pass || (isNew ? gen() : ''), noFocus:true }, { k:'fee', label:'月額・課金（円/月）', type:'number', value:e.fee },
-      { k:'url', label:'URL', value:e.url }, { k:'memo', label:'メモ', type:'area', value:e.memo }], '保存', isNew ? '' : '<button class="link danger" data-v="0" id="vDel">このアカウントを消す</button>');
+      { k:'url', label:'URL', value:e.url }, { k:'memo', label:'メモ', type:'area', value:e.memo }], '保存', isNew ? {} : { del:'このアカウントを消す' });
+    if (v && v._del) { if (await ask(`「${e.name}」を消しますか？`, '消す', 'やめる')) { list = list.filter(x => x.id !== e.id); await saveList(); render(); toast('消しました'); } return; }
     if (!v || state !== 'open') return;
     if (!v.name) return toast('サービス名を入れてください');
     const obj = Object.assign({}, e, v, { updated:Date.now() }, isNew ? { id:uid() } : {});
@@ -129,13 +130,13 @@ const Vault = (() => {
     try { const out = await assertPrf(unb64(vault.prf.credId), unb64(vault.prf.salt)); await useRaw(await unseal(await prfKey(out), vault.prf.box)); await loadList(); state = 'open'; render(); }
     catch (e) { /* パスワードで開ける */ }
   }
-  // 消す（フォームの中のボタン）
-  document.addEventListener('click', async e => {
-    if (e.target.id !== 'vDel' || state !== 'open') return;
-    const name = e.target.closest('.ask-in').querySelector('input').value;
-    list = list.filter(x => x.name !== name); await saveList(); setTimeout(render, 50); toast('消しました');
-  }, true);
-
   async function init() { vault = await DB.get('vault', null); state = vault ? 'locked' : 'setup'; }
-  return { init, open, monthly:() => state === 'open' ? list.reduce((s, e) => s + (+e.fee || 0), 0) : null };
+  // アプリのロック用：金庫は開かずに、本人かどうかだけ確かめる（同じマスターパスワード・Face IDを使う）
+  const gate = {
+    ready:() => !!vault,
+    face:() => !!(vault && vault.prf && canPasskey()),
+    async tryFace() { const out = await assertPrf(unb64(vault.prf.credId), unb64(vault.prf.salt)); await unseal(await prfKey(out), vault.prf.box); return true; },
+    async tryPw(pw) { await unseal(await pwKey(pw, unb64(vault.salt), vault.iter), vault.pw); return true; },
+  };
+  return { init, open, gate, monthly:() => state === 'open' ? list.reduce((s, e) => s + (+e.fee || 0), 0) : null };
 })();

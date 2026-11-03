@@ -4,7 +4,7 @@ const Clinic = (() => {
   let seg = 'body';
   const MEAL = { '':'—', ate:'食べた', coffee:'コーヒー', skip:'抜いた' };
   const MEAL_NEXT = { '':'ate', ate:'coffee', coffee:'skip', skip:'' };
-  const MOOD = [[5, '😄'], [4, '🙂'], [3, '😐'], [2, '😞'], [1, '😣']];
+  const MOOD = [[5, 'm5'], [4, 'm4'], [3, 'm3'], [2, 'm2'], [1, 'm1']];
 
   // ===== 質問票 =====
   const K6 = { title:'今週のチェック（K6）', note:'この1週間で、次のことをどれくらい感じましたか。',
@@ -31,18 +31,18 @@ const Clinic = (() => {
     return Object.assign(s, { ac, high:s.react >= 31 || (s.react >= 23 && ac >= 39) });
   }
   const k6Level = n => n >= 13 ? ['かなり大きい', 'bad'] : n >= 10 ? ['大きめ', 'warn'] : n >= 5 ? ['少したまっている', 'mid'] : ['落ち着いている', 'ok'];
-  const HELP = `<div class="help hud"><b>話せる場所</b><p>こころの健康相談統一ダイヤル <a href="tel:0570064556">0570-064-556</a>（つながる時間は都道府県によって違います）</p><p>しんどさが続くときは、かかりつけ医や心療内科に相談してください。</p></div>`;
+  const HELP = `<div class="help"><b>話せる場所</b><p>こころの健康相談統一ダイヤル <a href="tel:0570064556">0570-064-556</a>（つながる時間は都道府県によって違います）</p><p>しんどさが続くときは、かかりつけ医や心療内科に相談してください。</p></div>`;
 
-  function peek() {
-    return `<span id="ckPeek">からだとこころ</span><span>今日のチェック</span>`;
-  }
+  function peek() { return `<span class="k">昨夜の睡眠</span><b class="v" id="ckPeek">—</b><span class="s" id="ckPeek2">今日のチェック</span>`; }
   async function peekFill() {
-    const c = await Data.chk(D.today()), st = await Data.stDaily(), sl = Data.sleepH(c), e = $('ckPeek');
-    if (e) { e.innerHTML = `睡眠 <b>${sl != null ? sl + 'h' : '—'}</b>`; e.nextElementSibling.textContent = st ? `チェック済（${st.sum}/12）` : '今日のチェックまだ'; }
+    const c = await Data.chk(D.today()), st = await Data.stDaily(), sl = Data.sleepH(c);
+    if ($('ckPeek')) { $('ckPeek').textContent = sl != null ? sl + '時間' : '—'; $('ckPeek2').textContent = st ? `今日のチェック ${st.sum}/12` : '今日のチェックはまだ'; }
   }
 
   async function render(el) {
-    el.innerHTML = `<div class="seg big" id="ckSeg"><button data-seg="body">からだ</button><button data-seg="mind">こころ</button><button data-seg="karte">カルテ</button></div><div id="ckBody"></div>`;
+    const p = Data.profile(), td = D.today();
+    el.innerHTML = `<div class="kt-head">${Deco.tape('tc')}<div><small>MEDICAL RECORD</small><b>診療録</b></div><dl><dt>患者</dt><dd>${esc(p.name || 'ようへい')} 様</dd><dt>担当</dt><dd>乃亜</dd><dt>日付</dt><dd>${td.replace(/-/g, '.')}</dd></dl></div>
+      <div class="seg big" id="ckSeg"><button data-seg="body">からだ</button><button data-seg="mind">こころ</button><button data-seg="karte">カルテ</button></div><div id="ckBody"></div>`;
     el.querySelectorAll('[data-seg]').forEach(b => b.classList.toggle('on', b.dataset.seg === seg));
     if (seg === 'body') await body($('ckBody'));
     if (seg === 'mind') await mind($('ckBody'));
@@ -61,7 +61,7 @@ const Clinic = (() => {
         <div class="cnt"><span>お酒（缶）</span><button data-cnt="drink" data-d="-1">−</button><b>${c.drink || 0}</b><button data-cnt="drink" data-d="1">＋</button></div>
         <div class="cnt"><span>タバコ（本）</span><button data-cnt="smoke" data-d="-1">−</button><b>${c.smoke || 0}</b><button data-cnt="smoke" data-d="1">＋</button><button data-cnt="smoke" data-d="5" class="s">＋5</button></div>
         <button class="btn w" id="usualDay">いつもの一日を入れる</button><p class="mini">朝は抜き、昼はコーヒー、夜は家、お酒2缶、タバコ15本。違うところだけ直してください。</p></div>
-      <div class="sec"><h3><small>PRESCRIPTION</small>今日の処方箋</h3><div class="brief rx" id="rxBox">${Face.img('normal', 'sm')}<div class="bt"><span class="dots"><i></i><i></i><i></i></span></div></div></div>`;
+      <div class="sec"><h3><small>PRESCRIPTION</small>今日の処方箋</h3><div class="rx" id="rxBox"><span class="dots"><i></i><i></i><i></i></span></div></div>`;
     Dial.mount($('dial'), c.bed || '', c.wake || '', async (bed, wake) => { await Data.setChk(t, { bed, wake }); peekFill(); });
     rx();
   }
@@ -76,7 +76,7 @@ const Clinic = (() => {
       const c1 = await Data.chk(D.add(D.today(), -1)), c0 = await Data.chk(D.today()), sl = Data.sleepH(c0);
       r = { face:'worry', text:sl != null && sl < 6 ? `睡眠${sl}時間。……今夜は25時までに横になって。お酒は1缶にしとこ。` : (c1.drink || 0) >= 3 ? '昨日は飲みすぎ。今日は水を3杯、お酒はなしでいこ。' : '昼はコーヒーだけなんでしょ。……夜はちゃんと食べて、水も飲んで。' };
     }
-    if ($('rxBox')) $('rxBox').innerHTML = `${Face.img(r.face || 'normal', 'sm')}<div class="bt"><p>${esc(r.text)}</p></div>`;
+    if ($('rxBox')) { $('rxBox').innerHTML = `<div class="rx-h"><b>処方箋</b><small>${D.today().replace(/-/g, '.')}</small></div><p class="hand">${esc(r.text)}</p>${Stamp()}${Deco.doodle('rabbit', 'rx-d')}`; requestAnimationFrame(() => { const st = $('rxBox').querySelector('.stamp'); setTimeout(() => { st.classList.add('in'); Sound.se('tap'); }, 600); }); }
   }
 
   // ===== こころ =====
@@ -85,7 +85,7 @@ const Clinic = (() => {
     const prevK6 = await DB.get('k6:' + D.week(D.add(D.today(), -7)));
     const worry = (k6 && k6.score >= 13) || (k6 && prevK6 && k6.score >= 10 && prevK6.score >= 10) || (bj && bj.s && bj.s.high);
     el.innerHTML = `
-      <div class="sec"><h3><small>MOOD</small>今の気分</h3><div class="moods">${MOOD.map(([v, e]) => `<button data-mood="${v}" class="${c.mood === v ? 'on' : ''}">${e}</button>`).join('')}</div></div>
+      <div class="sec"><h3><small>MOOD</small>今の気分</h3><div class="moods">${MOOD.map(([v, e]) => `<button data-mood="${v}" class="${c.mood === v ? 'on' : ''}">${IC(e)}</button>`).join('')}</div></div>
       <div class="sec"><h3><small>CHECK</small>ストレスチェック</h3>
         <div class="rows">
           <button class="row" id="stDay"><i class="tb clinic">毎日</i><span>乃亜と3問（気分・疲れ・イライラ）</span><em>${st ? `済 ${st.sum}/12` : 'まだ'}</em></button>
@@ -121,7 +121,7 @@ const Clinic = (() => {
   function sheet(def, onDone) {
     const parts = def.parts || [{ name:'', note:def.note, c:def.c.map(x => x[1]), q:def.q.map(t => [t]) }];
     let n = 0;
-    const el = h(`<div class="qs"><div class="qs-in hud"><header><b>${esc(def.title)}</b><button class="x">✕</button></header><div class="qs-body">
+    const el = h(`<div class="qs"><div class="qs-in paper">${Deco.tape('tl')}<header><b>${esc(def.title)}</b><button class="x">${IC('x')}</button></header><div class="qs-body">
       ${parts.map(p => `${p.name ? `<h4>${esc(p.name)}</h4>` : ''}<p class="mini">${esc(p.note)}</p>${p.q.map(q => { const i = n++; return `<div class="qq" data-q="${i}"><p>${i + 1}. ${esc(q[0])}</p><div class="qc">${p.c.map((c, j) => `<button data-a="${j}">${esc(c)}</button>`).join('')}</div></div>`; }).join('')}`).join('')}
       </div><footer><span id="qsN">0/${n}</span><button class="btn" id="qsOk" disabled>結果を見る</button></footer></div></div>`);
     const ans = Array(n).fill(null);
@@ -174,10 +174,10 @@ const Clinic = (() => {
       <div class="sec"><h3><small>KARTE</small>直近14日</h3>
         <div class="nums3"><div><small>平均睡眠</small><b>${avg != null ? avg + 'h' : '—'}</b></div><div><small>お酒/日</small><b>${dr.length ? (dr.reduce((s, d) => s + d.c.drink, 0) / dr.length).toFixed(1) : '—'}</b></div><div><small>タバコ/日</small><b>${sm.length ? Math.round(sm.reduce((s, d) => s + d.c.smoke, 0) / sm.length) : '—'}</b></div></div>
         <div class="karte"><table><tr><th>日</th><th>睡眠</th><th>就寝</th><th>ご飯</th><th>酒</th><th>煙</th><th>気分</th><th>点</th></tr>
-        ${ds.slice().reverse().map(d => { const sl = Data.sleepH(d.c), m = d.c.meals || {}; return `<tr><td>${D.md(d.day)}<small>${D.dow(d.day)}</small></td><td class="${sl != null && sl < 6 ? 'bad' : ''}">${sl != null ? sl : '·'}</td><td>${d.c.bed || '·'}</td><td>${['am', 'pm', 'night'].map(k => m[k] === 'ate' ? '●' : m[k] === 'coffee' ? '◐' : m[k] === 'skip' ? '○' : '·').join('')}</td><td>${d.c.drink != null ? d.c.drink : '·'}</td><td>${d.c.smoke != null ? d.c.smoke : '·'}</td><td>${d.c.mood ? MOOD.find(x => x[0] === d.c.mood)[1] : '·'}</td><td class="${d.st && d.st.sum >= 9 ? 'bad' : ''}">${d.st ? d.st.sum : '·'}</td></tr>`; }).join('')}</table></div>
+        ${ds.slice().reverse().map(d => { const sl = Data.sleepH(d.c), m = d.c.meals || {}; return `<tr><td>${D.md(d.day)}<small>${D.dow(d.day)}</small></td><td class="${sl != null && sl < 6 ? 'bad' : ''}">${sl != null ? sl : '·'}</td><td>${d.c.bed || '·'}</td><td>${['am', 'pm', 'night'].map(k => m[k] === 'ate' ? '●' : m[k] === 'coffee' ? '◐' : m[k] === 'skip' ? '○' : '·').join('')}</td><td>${d.c.drink != null ? d.c.drink : '·'}</td><td>${d.c.smoke != null ? d.c.smoke : '·'}</td><td>${d.c.mood ? IC(MOOD.find(x => x[0] === d.c.mood)[1], 'sm') : '·'}</td><td class="${d.st && d.st.sum >= 9 ? 'bad' : ''}">${d.st ? d.st.sum : '·'}</td></tr>`; }).join('')}</table></div>
         <p class="mini">ご飯：●食べた ◐コーヒーだけ ○抜いた。点は毎日のチェック（12点満点、高いほどしんどい）。</p></div>
       <div class="sec"><h3><small>K6</small>週ごとのチェック</h3>${k6s.length ? `<div class="bars">${k6s.map(x => `<div class="bar"><span>${D.md(x.wk)}の週</span><i class="${k6Level(x.v.score)[1]}" style="--w:${Math.round(x.v.score / 24 * 100)}%"></i><em>${x.v.score}</em></div>`).join('')}</div>` : '<p class="mini">まだありません。</p>'}</div>
-      <div class="sec"><h3><small>FINDINGS</small>乃亜の所見</h3><div class="brief">${Face.img('normal', 'sm')}<div class="bt"><p>${esc(finding(avg, ds))}</p></div></div></div>`;
+      <div class="sec"><h3><small>FINDINGS</small>乃亜の所見</h3><div class="finding"><p class="hand">${esc(finding(avg, ds))}</p>${Stamp('乃亜', 'in')}</div></div>`;
   }
   function finding(avg, ds) {
     const late = ds.filter(d => d.c.bed && (D.min(d.c.bed) < 5 * 60)).length, dr = ds.filter(d => (d.c.drink || 0) >= 3).length;
@@ -215,8 +215,8 @@ const Dial = (() => {
         ${Array.from({ length:24 }, (_, i) => { const [x1, y1] = pt(i * 60, R - 12), [x2, y2] = pt(i * 60, R - (i % 6 ? 16 : 20)); return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="tick"/>`; }).join('')}
         ${[0, 6, 12, 18].map(hr => { const [x, y] = pt(hr * 60, R - 32); return `<text x="${x}" y="${y + 4}" class="hl">${hr}</text>`; }).join('')}
         <path d="M${bx} ${by} A${R} ${R} 0 ${large} 1 ${wx} ${wy}" class="arc"/>
-        <circle cx="${bx}" cy="${by}" r="13" class="kb" data-k="b"/><text x="${bx}" y="${by + 4}" class="ki">☾</text>
-        <circle cx="${wx}" cy="${wy}" r="13" class="kw" data-k="w"/><text x="${wx}" y="${wy + 4}" class="ki">☀</text>
+        <circle cx="${bx}" cy="${by}" r="13" class="kb" data-k="b"/><text x="${bx}" y="${by + 4}" class="ki">寝</text>
+        <circle cx="${wx}" cy="${wy}" r="13" class="kw" data-k="w"/><text x="${wx}" y="${wy + 4}" class="ki">起</text>
         <text x="${C}" y="${C - 8}" class="big">${Math.floor(span / 60)}<tspan>時間</tspan>${span % 60 ? `${span % 60}<tspan>分</tspan>` : ''}</text>
         <text x="${C}" y="${C + 18}" class="sub">${D.fmtMin(b)} → ${D.fmtMin(w)}</text></svg>
         <div class="dial-b">${set ? '<span class="mini">記録しました</span>' : '<button class="btn sm" data-dsave>この時間で記録</button><span class="mini">いつもの時間を表示中</span>'}</div>`;
