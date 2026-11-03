@@ -216,3 +216,4 @@
 .sw { flex:none; width:48px; height:28px; border-radius:14px; background:#ddd5e8; position:relative; } .sw::after { content:''; position:absolute; left:3px; top:3px; width:22px; height:22px; border-radius:50%; background:#fff; transition:left var(--t2) var(--ez); box-shadow:0 1px 3px rgba(0,0,0,.2); }
 .sw.on { background:#a46fd6; } .sw.on::after { left:23px; }
 .imgs { display:flex; flex-wrap:wrap; gap:5px; } .imgs span { font:500 10.5px var(--f-en); padding:2px 8px; border-radius:6px; background:#efeaf6; color:#9b93a8; } .imgs span.ok { background:#e2f4ea; color:#2f8a5f; }
+#panel[data-tab=room] .inrow .btn, #panel[data-tab=room] .inrow .btn.w { flex:1; width:auto; margin:0; }
