@@ -1,0 +1,14 @@
+{
+  "name": "Life Partner",
+  "short_name": "Life Partner",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0e1b",
+  "theme_color": "#0a0e1b",
+  "icons": [
+    { "src": "img/icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" },
+    { "src": "img/icon-180.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
