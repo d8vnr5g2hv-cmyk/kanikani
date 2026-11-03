@@ -127,7 +127,7 @@ const Room = (() => {
       <div class="rows">${tracks.map(t => `<div class="row"><span>${esc(t.name)}</span><button class="del" data-tdel="${t.id}">✕</button></div>`).join('') || '<p class="mini">まだありません。</p>'}</div>
       ${tracks.length ? Object.keys(TABS).map(k => `<label class="fl"><span>${TABS[k].name}</span><select data-bgm="${k}"><option value="">なし</option>${tracks.map(t => `<option value="${t.id}"${map[k] === t.id ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>`).join('') : ''}
       <h4>絵の状態</h4><div class="imgs">${imgs.map(([n, ok]) => `<span class="${ok ? 'ok' : ''}">${n}</span>`).join('')}</div>
-      <p class="mini">絵は img フォルダに、決まった名前で置くと切り替わります。</p>
+      <p class="mini">絵は index.html と同じ場所（または img フォルダ）に、決まった名前で置くと切り替わります。</p>
       <h4>控え</h4>
       <div class="inrow"><button class="btn w" id="ex">書き出す</button><label class="btn w">読み込む<input type="file" id="im" accept="application/json,.json" hidden></label></div>
       <p class="mini">初期データ（初期データ_乃亜.json）もここから読み込みます。最後の書き出し：${esc(await DB.get('lastBackup', '—'))}</p>

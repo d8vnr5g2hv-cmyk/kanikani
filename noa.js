@@ -20,7 +20,8 @@ const Pic = {
     const p = new Promise(r => { const i = new Image(); i.onload = () => r(url); i.onerror = () => r(null); i.src = url; });
     Pic.memo.set(url, p); return p;
   },
-  async find(name) { for (const ext of ['jpg', 'png', 'webp']) { const u = await Pic.probe(`img/${name}.${ext}`); if (u) return u; } return null; },
+  // 絵は、リポジトリの一番上（index.htmlと同じ場所）でも、img フォルダの中でもよい
+  async find(name) { for (const dir of ['', 'img/']) for (const ext of ['jpg', 'png', 'webp']) { const u = await Pic.probe(`${dir}${name}.${ext}`); if (u) return u; } return null; },
 };
 
 // 表情アイコン（丸く切り抜いて表示）。絵がなければ色と文字

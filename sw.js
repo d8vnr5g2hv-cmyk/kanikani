@@ -1,5 +1,5 @@
 // Life Partner — オフラインでも開けるように（中身を直したら CACHE の番号を上げる）
-const CACHE = 'life-partner-noa-v4';
+const CACHE = 'life-partner-noa-v5';
 const CORE = ['./', 'index.html', 'base.css', 'core.js', 'noa.js', 'data.js', 'input.js', 'talk.js', 'home.js', 'desk.js', 'clinic.js', 'bank.js', 'vault.js', 'room.js', 'lock.js', 'app.js', 'manifest.json'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('life-partner') && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
