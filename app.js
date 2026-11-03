@@ -78,7 +78,7 @@ const App = (() => {
   }
 
   async function boot() {
-    await DB.open(); await loadCfg(); await Data.load(); await Vault.init();
+    await DB.open(); await loadCfg(); await Data.load(); await Vault.init(); await Tracks.defaults();
     await Promise.all([Face.load(), Stage.preload()]);
     [Input, Talk, Home, Desk, Clinic, Bank, Room].forEach(m => m.bind());
     bindPanel(); bindResume(); Motes.init(); Home.start();

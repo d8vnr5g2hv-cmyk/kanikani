@@ -74,6 +74,19 @@ const DB = (() => {
 
 // ===== 設定 =====
 const CFG = { api:null, bgm:true, lock:false, vol:.35 };
+// 曲の一覧：リポジトリの bgm_list.json（はじめから入っている曲）＋ 端末に読み込んだ曲
+const Tracks = {
+  list:null,
+  async all() {
+    if (!Tracks.list) { try { const r = await fetch('bgm_list.json', { cache:'no-cache' }); Tracks.list = r.ok ? (await r.json()).map(t => ({ id:'url:' + t.file, name:t.name, builtin:true })) : []; } catch (e) { Tracks.list = []; } }
+    return Tracks.list.concat(await DB.get('tracks', []));
+  },
+  // はじめての起動で、おすすめの割り当てを入れる（あとで自由に変えられる）
+  async defaults() {
+    if (await DB.get('bgmMap')) return;
+    try { const r = await fetch('bgm_list.json', { cache:'no-cache' }); if (!r.ok) return; const map = {}; (await r.json()).forEach(t => (t.for || []).forEach(k => { map[k] = 'url:' + t.file; })); await DB.set('bgmMap', map); } catch (e) {}
+  },
+};
 async function loadCfg() { Object.assign(CFG, await DB.get('cfg', {}) || {}); }
 const saveCfg = () => DB.set('cfg', { api:CFG.api, bgm:CFG.bgm, lock:CFG.lock, vol:CFG.vol });
 
@@ -159,7 +172,10 @@ const Sound = (() => {
   function ramp(v, t) { const n = ctx.currentTime; gain.gain.cancelScheduledValues(n); gain.gain.setValueAtTime(gain.gain.value, n); gain.gain.linearRampToValueAtTime(v, n + t); }
   async function buf(id) {
     if (bufs.has(id)) return bufs.get(id);
-    const p = DB.blobGet(id).then(r => { if (!r) throw new Error('none'); return r.data.arrayBuffer ? r.data.arrayBuffer() : r.data; })
+    // url: で始まるものはリポジトリに置いた曲、それ以外は端末に読み込んだ曲
+    const src = id.startsWith('url:') ? fetch(id.slice(4)).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      : DB.blobGet(id).then(r => { if (!r) throw new Error('none'); return r.data.arrayBuffer ? r.data.arrayBuffer() : r.data; });
+    const p = src
       .then(a => new Promise((ok, ng) => ctx.decodeAudioData(a.slice ? a.slice(0) : a, ok, ng)));
     bufs.set(id, p); p.catch(() => bufs.delete(id));
     return p;

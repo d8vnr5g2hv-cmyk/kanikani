@@ -1,0 +1,112 @@
+[
+ {
+  "file": "bgm_todo.mp3",
+  "name": "Todo",
+  "for": [
+   "desk"
+  ]
+ },
+ {
+  "file": "moechakka.mp3",
+  "name": "もえちゃっかふぁいやー",
+  "for": [
+   "room"
+  ]
+ },
+ {
+  "file": "serina_bgm.mp3",
+  "name": "セリナ",
+  "for": [
+   "clinic"
+  ]
+ },
+ {
+  "file": "bgm_title.mp3",
+  "name": "タイトル（Favorite）",
+  "for": [
+   "title"
+  ]
+ },
+ {
+  "file": "yuuka_bgm.mp3",
+  "name": "ユウカ",
+  "for": [
+   "bank"
+  ]
+ },
+ {
+  "file": "bgm.mp3",
+  "name": "ロビー（ホシノ）",
+  "for": [
+   "home"
+  ]
+ },
+ {
+  "file": "bgm_accounts.mp3",
+  "name": "Accounts"
+ },
+ {
+  "file": "bgm_love.mp3",
+  "name": "Love"
+ },
+ {
+  "file": "bgm_profile.mp3",
+  "name": "Profile"
+ },
+ {
+  "file": "c3_bgm.mp3",
+  "name": "c3"
+ },
+ {
+  "file": "c5_bgm.mp3",
+  "name": "c5"
+ },
+ {
+  "file": "cafe_bgm.mp3",
+  "name": "カフェ"
+ },
+ {
+  "file": "kisaki_bgm.mp3",
+  "name": "キサキ"
+ },
+ {
+  "file": "seia_bgm.mp3",
+  "name": "セイア"
+ },
+ {
+  "file": "nico_bgm.mp3",
+  "name": "ニコ"
+ },
+ {
+  "file": "noa_bgm.mp3",
+  "name": "ノア"
+ },
+ {
+  "file": "c2_bgm.mp3",
+  "name": "ミカ"
+ },
+ {
+  "file": "meet_a_bgm.mp3",
+  "name": "会議室A"
+ },
+ {
+  "file": "meet_b_bgm.mp3",
+  "name": "会議室B"
+ },
+ {
+  "file": "ops_result_bgm.mp3",
+  "name": "作戦の結果"
+ },
+ {
+  "file": "ops_door_bgm.mp3",
+  "name": "作戦室の扉"
+ },
+ {
+  "file": "night_bgm.mp3",
+  "name": "夜"
+ },
+ {
+  "file": "ops_lounge_bgm.mp3",
+  "name": "待機室"
+ }
+]
